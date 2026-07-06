@@ -33,8 +33,8 @@ function useRemoveFromWatchlist() {
 
 function useSimilarItems(itemId: number) {
   return useQuery({
-    queryKey: ['/api/items', itemId, 'similar'],
-    queryFn: () => customFetch<any[]>(`/api/items/${itemId}/similar`),
+    queryKey: ['/api/recommendations/similar', itemId],
+    queryFn: () => customFetch<any[]>(`/api/recommendations/similar/${itemId}`),
     enabled: !!itemId
   });
 }
@@ -52,14 +52,14 @@ function useLogInteraction() {
 function useGetReviews(itemId: number) {
   return useQuery({
     queryKey: ['/api/reviews', itemId],
-    queryFn: () => customFetch<any[]>(`/api/items/${itemId}/reviews`),
+    queryFn: () => customFetch<any[]>(`/api/reviews/${itemId}`),
     enabled: !!itemId
   });
 }
 
 function useCreateReview() {
   return useMutation({
-    mutationFn: ({ itemId, data }: { itemId: number, data: any }) => customFetch(`/api/items/${itemId}/reviews`, { 
+    mutationFn: ({ itemId, data }: { itemId: number, data: any }) => customFetch(`/api/reviews/${itemId}`, { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)

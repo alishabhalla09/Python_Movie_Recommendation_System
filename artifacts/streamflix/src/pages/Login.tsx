@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useLogin } from "@workspace/api-client-react";
+import { useLogin, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -12,12 +13,15 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const login = useLogin();
+  const queryClient = useQueryClient();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     login.mutate({ data: { email, password } }, {
       onSuccess: (data) => {
         localStorage.setItem("streamflix_token", data.token);
+        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+        queryClient.resetQueries({ queryKey: getGetMeQueryKey() });
         setLocation("/");
       },
       onError: () => {

@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Play, Info } from "lucide-react";
-import { Item } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { Item } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 
 interface HeroBannerProps {

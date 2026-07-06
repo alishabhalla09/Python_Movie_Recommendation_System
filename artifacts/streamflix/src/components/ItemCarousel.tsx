@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState } from "react";
-import { Item } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { Item } from "@workspace/api-client-react";
 import PosterCard from "./PosterCard";
 
 interface ItemCarouselProps {

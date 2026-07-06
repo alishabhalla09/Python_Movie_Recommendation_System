@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Item } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { Item } from "@workspace/api-client-react";
 import { Star } from "lucide-react";
 
 interface PosterCardProps {
