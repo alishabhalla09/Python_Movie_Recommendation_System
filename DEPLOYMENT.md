@@ -125,9 +125,9 @@ Phir Vercel par deploy karo:
 ```
 1. https://vercel.com par jao → GitHub se login karo
 2. "New Project" → Apna GitHub repo select karo
-3. "Root Directory" set karo: artifacts/streamflix
-4. "Build Command": pnpm run build
-5. "Output Directory": dist
+3. "Root Directory" ke saamne "Edit" dabao aur `artifacts/streamflix` select karo
+4. "Framework Preset" automatically `Vite` set ho jayega.
+5. **IMPORTANT:** "Build & Development Settings" mein "Output Directory" ke aage `Override` on karo aur wahan `dist/public` likho (sirf `dist` nahi).
 6. "Environment Variables" mein add karo:
    VITE_API_URL = https://api-xxx.railway.app (Step 6 ka URL)
 7. Deploy karo!
@@ -138,10 +138,21 @@ Phir Vercel par deploy karo:
 
 Railway database mein MovieLens data import karo:
 
+Railway ke Postgres me "Public Networking" enable karo, wahan se naya Public URL lo aur apne laptop me ye run karo:
+
 ```bash
 # Local machine se Railway database mein seed karo
-DATABASE_URL="postgresql://postgres:xxxxx@railway.app:5432/railway" \
-  pnpm --filter @workspace/scripts run seed
+DATABASE_URL="postgresql://postgres:xxxxx@mainline.proxy.rlwy.net:40423/railway" pnpm --filter @workspace/scripts run seed
+```
+
+> **🔥 IMPORTANT FIX:** Seeding ke baad, Postgres ka user ID sequence atak jata hai. Signup chalane ke liye ek extra command run karni zaroori hai:
+```bash
+# Isi folder me run karo
+DATABASE_URL="Wahi_Public_URL_Yahan_Daalo" npx tsx -e "
+import { Pool } from 'pg';
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+pool.query(\"SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))\").then(() => process.exit(0));
+"
 ```
 
 ### Step 9: Test Karo!
