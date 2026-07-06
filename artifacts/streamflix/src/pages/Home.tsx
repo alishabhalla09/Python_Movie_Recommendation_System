@@ -25,7 +25,21 @@ export default function Home() {
     );
   }
 
-  if (isError || !rows || rows.length === 0) {
+  if (isError || !rows) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center text-center px-4">
+        <div>
+          <h2 className="text-3xl font-bold mb-4 text-white">Something went wrong</h2>
+          <p className="text-muted-foreground">Unable to load recommendations. Please try again later.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Extract actual array whether it's wrapped in data or not
+  const rowData: any[] = Array.isArray(rows) ? rows : ((rows as any)?.data || []);
+
+  if (!rowData || rowData.length === 0) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center text-center px-4">
         <div>
@@ -37,15 +51,15 @@ export default function Home() {
   }
 
   // Find a hero item (e.g. from trending)
-  const trendingRow = rows.find(r => r.reason === 'trending');
-  const heroItem = trendingRow?.items[0] || rows[0]?.items[0];
+  const trendingRow = rowData.find(r => r.reason === 'trending');
+  const heroItem = trendingRow?.items?.[0] || rowData[0]?.items?.[0];
 
   return (
-    <div className="pb-20">
+    <div className="pb-20 bg-background min-h-screen">
       {heroItem && <HeroBanner item={heroItem} />}
       
-      <div className="flex flex-col gap-2 -mt-10 md:-mt-20 relative z-10">
-        {rows.map((row, idx) => (
+      <div className="flex flex-col gap-8 -mt-24 md:-mt-32 relative z-10 w-full overflow-hidden">
+        {rowData.map((row, idx) => (
           row.items.length > 0 && (
             <ItemCarousel 
               key={`${row.reason}-${idx}`} 

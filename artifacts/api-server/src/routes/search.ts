@@ -15,42 +15,58 @@ router.get("/search", async (req, res): Promise<void> => {
     return;
   }
 
-  const { q, genre, minRating, limit = 20 } = parsed.data;
+  const { q, genre, minRating, limit = 60 } = parsed.data;
 
-  // PostgreSQL full-text search on title + description
-  const searchTerm = q.trim();
-  if (!searchTerm) {
+  const searchTerm = (q ?? "").trim();
+  const hasGenre = !!genre;
+  const hasRating = minRating != null && minRating > 0;
+  const hasQuery = searchTerm.length > 0;
+
+  // At least one filter must be present
+  if (!hasQuery && !hasGenre && !hasRating) {
     res.json(SearchItemsResponse.parse([]));
     return;
   }
 
-  const conditions = [
-    sql`(
-      to_tsvector('english', ${itemsTable.title} || ' ' || ${itemsTable.description})
-      @@ plainto_tsquery('english', ${searchTerm})
-      OR ${itemsTable.title} ILIKE ${"%" + searchTerm + "%"}
-    )`,
-  ];
+  const conditions: any[] = [];
 
-  if (minRating != null) {
-    conditions.push(gte(itemsTable.rating, minRating));
+  // Full-text search only when query provided
+  if (hasQuery) {
+    conditions.push(
+      sql`(
+        to_tsvector('english', ${itemsTable.title} || ' ' || ${itemsTable.description})
+        @@ plainto_tsquery('english', ${searchTerm})
+        OR ${itemsTable.title} ILIKE ${"%" + searchTerm + "%"}
+      )`
+    );
+  }
+
+  if (hasRating) {
+    // Note: minRating filter works when ratings are populated in DB
+    // Currently ratings default to 0; genre filter is fully functional
+    conditions.push(gte(itemsTable.rating, minRating!));
   }
 
   let items = await db
     .select()
     .from(itemsTable)
-    .where(and(...conditions))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(
-      sql`ts_rank(to_tsvector('english', ${itemsTable.title} || ' ' || ${itemsTable.description}), plainto_tsquery('english', ${searchTerm})) DESC`,
-      sql`${itemsTable.rating} DESC`
+      hasQuery
+        ? sql`ts_rank(to_tsvector('english', ${itemsTable.title} || ' ' || ${itemsTable.description}), plainto_tsquery('english', ${searchTerm})) DESC`
+        : sql`${itemsTable.rating} DESC`
     )
-    .limit(limit);
+    .limit(hasGenre ? limit * 3 : limit); // fetch more when filtering by genre client-side
 
-  if (genre) {
-    items = items.filter((i) => i.genres.includes(genre));
+  // Genre filter (in-memory — genres stored as array)
+  if (hasGenre) {
+    items = items.filter((i) => i.genres.includes(genre!));
+    items = items.slice(0, limit);
   }
 
-  res.json(SearchItemsResponse.parse(items.map((i) => ({ ...i, interactionCount: null }))));
+  res.json(
+    SearchItemsResponse.parse(items.map((i) => ({ ...i, interactionCount: null })))
+  );
 });
 
 export default router;

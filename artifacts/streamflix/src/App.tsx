@@ -15,6 +15,7 @@ import History from "./pages/History";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient();
@@ -25,15 +26,14 @@ window.fetch = async (input, init) => {
   const token = localStorage.getItem("streamflix_token");
   if (token) {
     init = init || {};
-    init.headers = {
-      ...init.headers,
-      Authorization: `Bearer ${token}`
-    };
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    init.headers = headers;
   }
   return originalFetch(input, init);
 };
 
-function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType<any>, adminOnly?: boolean }) {
+function ProtectedRoute({ component: Component, adminOnly = false, isOnboarding = false }: { component: React.ComponentType<any>, adminOnly?: boolean, isOnboarding?: boolean }) {
   const { data: user, isLoading, isError } = useGetMe({ query: { queryKey: getGetMeQueryKey(), retry: false } });
 
   if (isLoading) {
@@ -42,6 +42,14 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
 
   if (isError || !user) {
     return <Redirect to="/login" />;
+  }
+
+  if (!isOnboarding && !user.hasOnboarded) {
+    return <Redirect to="/onboarding" />;
+  }
+
+  if (isOnboarding && user.hasOnboarded) {
+    return <Redirect to="/" />;
   }
 
   if (adminOnly && !user.isAdmin) {
@@ -53,6 +61,10 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
         </div>
       </Layout>
     );
+  }
+
+  if (isOnboarding) {
+    return <Component />;
   }
 
   return (
@@ -67,6 +79,9 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/onboarding">
+        {() => <ProtectedRoute component={Onboarding} isOnboarding={true} />}
+      </Route>
       
       <Route path="/">
         {() => <ProtectedRoute component={Home} />}

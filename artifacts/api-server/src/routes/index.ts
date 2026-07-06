@@ -8,6 +8,7 @@ import interactionsRouter from "./interactions";
 import watchlistRouter from "./watchlist";
 import reviewsRouter from "./reviews";
 import adminRouter from "./admin";
+import imagesRouter from "./images";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(interactionsRouter);
 router.use(watchlistRouter);
 router.use(reviewsRouter);
 router.use(adminRouter);
+router.use(imagesRouter);
 
 export default router;

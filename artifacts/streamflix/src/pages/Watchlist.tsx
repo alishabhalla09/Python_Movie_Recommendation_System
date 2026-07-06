@@ -35,11 +35,14 @@ export default function Watchlist() {
     );
   }
 
+  const rawWatchlist = watchlist as any;
+  const watchlistData: any[] = Array.isArray(rawWatchlist) ? rawWatchlist : (rawWatchlist?.data || []);
+
   return (
     <div className="pt-24 px-4 md:px-12 pb-20 min-h-screen">
       <h1 className="text-3xl font-bold mb-8 text-white">My List</h1>
 
-      {watchlist.length === 0 ? (
+      {watchlistData.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-muted-foreground space-y-6">
           <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center">
             <Bookmark className="w-10 h-10 text-muted-foreground" />
@@ -49,7 +52,7 @@ export default function Watchlist() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-          {watchlist.map((item: any) => (
+          {watchlistData.map((item: any) => (
             <div key={item.id} className="relative group">
               <PosterCard item={item} />
               <Button

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, watchlistTable, itemsTable } from "@workspace/db";
+import { db, watchlistTable, itemsTable, interactionsTable } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
 import {
   AddToWatchlistParams,
@@ -42,6 +42,18 @@ router.post("/watchlist/:itemId", requireAuth, async (req: AuthRequest, res): Pr
       userId: req.userId!,
       itemId: params.data.itemId,
     });
+
+    // Automatically log an interaction for ML model
+    await db.insert(interactionsTable).values({
+      userId: req.userId!,
+      itemId: params.data.itemId,
+      eventType: "watch", // Watchlist is treated as a strong signal
+    });
+
+    // Trigger ML model retrain
+    const recommenderUrl = process.env.RECOMMENDER_URL || "http://localhost:8000";
+    fetch(`${recommenderUrl}/train`, { method: "POST" }).catch(() => {});
+
     res.status(201).json(AddToWatchlistResponse.parse({ message: "Added to watchlist" }));
   } catch {
     res.status(409).json({ error: "Already in watchlist" });

@@ -145,6 +145,38 @@ export async function getSimilarItems(
   limit = 12,
   excludeIds: number[] = []
 ): Promise<Item[]> {
+  // First try the Python Collaborative Filtering ML model
+  try {
+    const recommenderUrl = process.env.RECOMMENDER_URL || "http://localhost:8000";
+    const response = await fetch(`${recommenderUrl}/similar/${itemId}?limit=${limit + excludeIds.length}`, {
+      signal: AbortSignal.timeout(1500)
+    });
+    if (response.ok) {
+      const data: any = await response.json();
+      if (data.similar && data.similar.length > 0) {
+        const itemIds = data.similar.map((r: any) => r.item_id).filter((id: number) => !excludeIds.includes(id));
+        if (itemIds.length > 0) {
+          const mlItems = await db
+            .select()
+            .from(itemsTable)
+            .where(inArray(itemsTable.id, itemIds));
+          
+          const mlItemMap = new Map(mlItems.map(i => [i.id, i]));
+          const sortedMlItems = itemIds
+            .map((id: number) => mlItemMap.get(id))
+            .filter(Boolean) as Item[];
+            
+          if (sortedMlItems.length > 0) {
+            return sortedMlItems.slice(0, limit);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch similar items from python ML, falling back to content-based", error);
+  }
+
+  // Fallback to basic Content-Based Filtering
   const [sourceItem] = await db
     .select()
     .from(itemsTable)
@@ -248,6 +280,41 @@ export async function getPersonalizedRecommendations(
   if (profileVec.size === 0) {
     // Cold start: return trending
     return getTrendingItems(limit);
+  }
+
+  // Try to get recommendations from Python microservice (Layer 3 & 4)
+  try {
+    const recommenderUrl = process.env.RECOMMENDER_URL || "http://localhost:8000";
+    const response = await fetch(`${recommenderUrl}/recommend/${userId}?limit=${limit}`, {
+      signal: AbortSignal.timeout(1500)
+    });
+    
+    if (response.ok) {
+      const data: any = await response.json();
+      if (data.recommendations && data.recommendations.length > 0) {
+        const itemIds = data.recommendations.map((r: any) => r.item_id);
+        
+        // Fetch items from DB
+        const mlItems = await db
+          .select()
+          .from(itemsTable)
+          .where(inArray(itemsTable.id, itemIds));
+          
+        // Sort by ML scores
+        const mlItemMap = new Map(mlItems.map(i => [i.id, i]));
+        const sortedMlItems = data.recommendations
+          .map((r: any) => mlItemMap.get(r.item_id))
+          .filter(Boolean);
+          
+        if (sortedMlItems.length > 0) {
+          // If we have enough recommendations, we return them (they are collaborative filtered)
+          // For a true hybrid blend, we could blend these with the content-based scores below
+          return sortedMlItems.slice(0, limit);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch from python recommendation service, falling back to content-based", error);
   }
 
   const candidates = await db

@@ -48,6 +48,7 @@ router.post("/auth/signup", async (req, res): Promise<void> => {
         id: user.id,
         email: user.email,
         isAdmin: user.isAdmin,
+        hasOnboarded: (user.preferences as any)?.hasOnboarded || false,
         createdAt: user.createdAt,
       },
       token,
@@ -88,6 +89,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         id: user.id,
         email: user.email,
         isAdmin: user.isAdmin,
+        hasOnboarded: (user.preferences as any)?.hasOnboarded || false,
         createdAt: user.createdAt,
       },
       token,
@@ -115,9 +117,50 @@ router.get("/auth/me", requireAuth, async (req: AuthRequest, res): Promise<void>
       id: user.id,
       email: user.email,
       isAdmin: user.isAdmin,
+      hasOnboarded: (user.preferences as any)?.hasOnboarded || false,
       createdAt: user.createdAt,
     })
   );
+});
+
+router.post("/auth/onboard", requireAuth, async (req: AuthRequest, res): Promise<void> => {
+  const itemIds = req.body?.itemIds;
+  
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    res.status(400).json({ error: "Invalid itemIds array" });
+    return;
+  }
+
+  const interactionsToInsert = itemIds.map(itemId => ({
+    userId: req.userId!,
+    itemId,
+    eventType: "watch", // give them a strong baseline
+    createdAt: new Date(),
+  }));
+
+  try {
+    const { interactionsTable } = await import("@workspace/db");
+    await db.insert(interactionsTable).values(interactionsToInsert).onConflictDoNothing();
+
+    // Update user preferences to hasOnboarded
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
+    if (user) {
+      const prefs = (user.preferences as Record<string, any>) || {};
+      prefs.hasOnboarded = true;
+      await db.update(usersTable).set({ preferences: prefs }).where(eq(usersTable.id, req.userId!));
+    }
+
+    // Trigger ML retrain
+    const recommenderUrl = process.env.RECOMMENDER_URL || "http://localhost:8000";
+    fetch(`${recommenderUrl}/train`, { 
+      method: "POST",
+      signal: AbortSignal.timeout(2000)
+    }).catch(() => {});
+
+    res.json({ message: "Onboarding completed successfully" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;

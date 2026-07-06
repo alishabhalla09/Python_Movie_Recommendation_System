@@ -27,6 +27,7 @@ export interface User {
   id: number;
   email: string;
   isAdmin: boolean;
+  hasOnboarded?: boolean;
   createdAt: string;
 }
 

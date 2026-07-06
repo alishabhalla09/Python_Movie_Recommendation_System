@@ -33,6 +33,7 @@ export const SignupResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "isAdmin": zod.boolean(),
+  "hasOnboarded": zod.boolean().optional(),
   "createdAt": zod.coerce.date()
 }),
   "token": zod.string()
@@ -56,6 +57,7 @@ export const LoginResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "isAdmin": zod.boolean(),
+  "hasOnboarded": zod.boolean().optional(),
   "createdAt": zod.coerce.date()
 }),
   "token": zod.string()
@@ -77,6 +79,7 @@ export const GetMeResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "isAdmin": zod.boolean(),
+  "hasOnboarded": zod.boolean().optional(),
   "createdAt": zod.coerce.date()
 })
 

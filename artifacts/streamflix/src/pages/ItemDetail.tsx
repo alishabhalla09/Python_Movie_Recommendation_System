@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
-import { useGetItem, getGetItemQueryKey } from "@workspace/api-client-react";
+import { useGetItem, getGetItemQueryKey, getGetHomeRecommendationsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Play, Plus, Check, Star, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ItemCarousel from "@/components/ItemCarousel";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
+import PosterCard from "@/components/PosterCard";
 
 // Hooks wrappers for ungenerated/unexported ones
 function useCheckWatchlist(itemId: number) {
@@ -85,6 +86,7 @@ export default function ItemDetail() {
 
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(10);
+  const [imgError, setImgError] = useState(false);
 
   // Log view interaction
   useEffect(() => {
@@ -97,6 +99,8 @@ export default function ItemDetail() {
   if (!item) return <div className="min-h-screen pt-24 text-center">Item not found</div>;
 
   const inWatchlist = watchlistStatus?.inWatchlist;
+  const rawReviews = reviews as any;
+  const reviewsData: any[] = Array.isArray(rawReviews) ? rawReviews : (rawReviews?.data || []);
 
   const toggleWatchlist = () => {
     if (inWatchlist) {
@@ -110,6 +114,9 @@ export default function ItemDetail() {
       addToWatchlist.mutate(itemId, {
         onSuccess: () => {
           toast({ title: "Added to My List" });
+          logInteraction.mutate({ itemId, eventType: 'watch' }, {
+            onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetHomeRecommendationsQueryKey() })
+          });
           refetchWatchlist();
         }
       });
@@ -122,6 +129,9 @@ export default function ItemDetail() {
       onSuccess: () => {
         toast({ title: "Review posted" });
         setReviewText("");
+        logInteraction.mutate({ itemId, eventType: 'rate', rating }, {
+          onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetHomeRecommendationsQueryKey() })
+        });
         refetchReviews();
       }
     });
@@ -131,10 +141,12 @@ export default function ItemDetail() {
     <div className="bg-black min-h-screen pb-20">
       {/* Hero Backdrop */}
       <div className="relative w-full h-[60vh] md:h-[80vh]">
-        {item.backdropUrl ? (
-          <img src={item.backdropUrl} alt={item.title} className="w-full h-full object-cover opacity-50" />
+        {item.backdropUrl && !imgError ? (
+          <img src={item.backdropUrl} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-50" />
+        ) : !imgError ? (
+          <img src={`https://image.pollinations.ai/prompt/Cinematic%20wide%20epic%20background%20landscape%20for%20the%20movie%20${encodeURIComponent(item.title)}?width=1920&height=1080&nologo=true`} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-40" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-t from-black to-zinc-900"></div>
+          <div className="w-full h-full bg-gradient-to-tr from-zinc-900 to-black"></div>
         )}
         
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
@@ -153,7 +165,12 @@ export default function ItemDetail() {
           <p className="text-gray-300 text-lg mb-8 line-clamp-4 max-w-2xl">{item.description}</p>
           
           <div className="flex items-center gap-4">
-            <Button size="lg" className="bg-white text-black hover:bg-white/90 font-bold px-8" onClick={() => toast({title:"Playback started!"})}>
+            <Button size="lg" className="bg-white text-black hover:bg-white/90 font-bold px-8" onClick={() => {
+              toast({title:"Playback started!"});
+              logInteraction.mutate({ itemId, eventType: 'watch', watchDuration: 3600 }, {
+                onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetHomeRecommendationsQueryKey() })
+              });
+            }}>
               <Play className="w-6 h-6 mr-2 fill-current" /> Play
             </Button>
             
@@ -204,7 +221,7 @@ export default function ItemDetail() {
             </form>
 
             <div className="space-y-4">
-              {reviews.map((r: any) => (
+              {reviewsData.map((r: any) => (
                 <div key={r.id} className="bg-zinc-900/30 p-4 rounded-lg border border-zinc-800/50">
                   <div className="flex justify-between items-start mb-2">
                     <div className="font-medium text-white">{r.userEmail?.split('@')[0]}</div>
@@ -214,7 +231,7 @@ export default function ItemDetail() {
                   <div className="text-xs text-zinc-600 mt-2">{format(new Date(r.createdAt), "MMM d, yyyy")}</div>
                 </div>
               ))}
-              {reviews.length === 0 && <p className="text-zinc-500">No reviews yet. Be the first!</p>}
+              {reviewsData.length === 0 && <p className="text-zinc-500">No reviews yet. Be the first!</p>}
             </div>
           </div>
         </div>
@@ -224,14 +241,7 @@ export default function ItemDetail() {
           <h3 className="text-lg font-bold text-white mb-6">More Like This</h3>
           <div className="grid grid-cols-2 gap-4">
             {similar.slice(0,6).map((sim: any) => (
-              <Link key={sim.id} href={`/item/${sim.id}`} className="block group">
-                <div className="aspect-[2/3] bg-zinc-900 rounded-md overflow-hidden relative border border-transparent group-hover:border-primary/50 transition-colors">
-                  {sim.posterUrl && <img src={sim.posterUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <Play className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </Link>
+              <PosterCard key={sim.id} item={sim} />
             ))}
           </div>
         </div>

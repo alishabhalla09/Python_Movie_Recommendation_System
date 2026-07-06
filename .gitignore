@@ -8,6 +8,17 @@ out-tsc
 .expo
 .expo-shared
 
+# environment files (NEVER commit these!)
+.env
+.env.local
+.env.production
+.env.development
+
+# ML dataset files (too large for git)
+scripts/data/
+data/
+*.csv
+
 # dependencies
 node_modules
 

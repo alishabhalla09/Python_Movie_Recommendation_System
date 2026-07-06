@@ -26,6 +26,15 @@ router.post("/interactions", requireAuth, async (req: AuthRequest, res): Promise
     watchDuration: parsed.data.watchDuration ?? null,
   });
 
+  // Asynchronously trigger training of the ML model
+  const recommenderUrl = process.env.RECOMMENDER_URL || "http://localhost:8000";
+  fetch(`${recommenderUrl}/train`, { 
+    method: "POST", 
+    signal: AbortSignal.timeout(2000) 
+  }).catch((e) => {
+    console.log("Could not trigger ML model training:", e.message);
+  });
+
   res.status(201).json(LogInteractionResponse.parse({ message: "Interaction logged" }));
 });
 
