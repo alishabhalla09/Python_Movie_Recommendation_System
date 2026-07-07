@@ -126,9 +126,7 @@ Phir Vercel par deploy karo:
 1. https://vercel.com par jao → GitHub se login karo
 2. "New Project" → Apna GitHub repo select karo
 3. "Root Directory" ke saamne "Edit" dabao aur `artifacts/streamflix` select karo
-4. "Framework Preset" automatically `Vite` set ho jayega.
-5. **IMPORTANT:** "Build & Development Settings" mein "Output Directory" ke aage `Override` on karo aur wahan `dist/public` likho (sirf `dist` nahi).
-6. "Environment Variables" mein add karo:
+130. 5. **IMPORTANT:** "Build & Development Settings" mein "Output Directory" ke aage `Override` on karo aur wahan `dist` likho. (Framework Preset me 'Vite' select hoga).
    VITE_API_URL = https://api-xxx.railway.app (Step 6 ka URL)
 7. Deploy karo!
 8. Vercel free URL milega: https://streamflix-xxx.vercel.app
