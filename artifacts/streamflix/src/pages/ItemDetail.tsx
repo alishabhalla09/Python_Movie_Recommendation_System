@@ -79,7 +79,7 @@ export default function ItemDetail() {
   const { data: watchlistStatus, refetch: refetchWatchlist } = useCheckWatchlist(itemId);
   const { data: reviews = [], refetch: refetchReviews } = useGetReviews(itemId);
   
-  const { data: realPoster } = useQuery({
+  const { data: realPoster, isLoading: isPosterLoading } = useQuery({
     queryKey: ['/api/images/poster', item?.title],
     queryFn: () => customFetch<{url: string | null}>(`/api/images/poster?title=${encodeURIComponent(item!.title)}`),
     enabled: !!item && !item.backdropUrl && !item.posterUrl && imageErrorLevel < 3,
@@ -154,7 +154,7 @@ export default function ItemDetail() {
           <img src={item.posterUrl} alt={item.title} onError={() => setImageErrorLevel(2)} className="w-full h-full object-cover opacity-40 md:blur-sm" />
         ) : realPoster?.url && imageErrorLevel < 3 ? (
           <img src={realPoster.url} alt={item.title} onError={() => setImageErrorLevel(3)} className="w-full h-full object-cover opacity-40 md:blur-sm" />
-        ) : imageErrorLevel < 4 ? (
+        ) : !isPosterLoading && imageErrorLevel < 4 ? (
           <img src={`https://image.pollinations.ai/prompt/Cinematic%20wide%20epic%20background%20landscape%20for%20the%20movie%20${encodeURIComponent(item.title)}?width=1920&height=1080&nologo=true`} alt={item.title} onError={() => setImageErrorLevel(4)} className="w-full h-full object-cover opacity-40" />
         ) : (
           <div className="w-full h-full bg-gradient-to-tr from-zinc-900 to-black"></div>
