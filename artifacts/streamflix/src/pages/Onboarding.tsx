@@ -8,14 +8,14 @@ import { Check } from "lucide-react";
 
 function SelectablePosterCard({ item, isSelected, onToggle }: { item: any, isSelected: boolean, onToggle: () => void }) {
   const [imgError, setImgError] = useState(false);
-  const { data: realPoster } = useQuery({
+  const { data: realPoster, isLoading: isPosterLoading } = useQuery({
     queryKey: ['/api/images/poster', item.title],
     queryFn: () => customFetch<{url: string | null}>(`/api/images/poster?title=${encodeURIComponent(item.title)}`),
     enabled: !item.posterUrl && !imgError,
     staleTime: 1000 * 60 * 60 * 24,
   });
 
-  const displayImage = item.posterUrl || realPoster?.url || (!imgError ? `https://image.pollinations.ai/prompt/Movie%20poster%20for%20${encodeURIComponent(item.title)}%20cinematic%20dark?width=300&height=450&nologo=true&seed=${item.id}` : null);
+  const displayImage = item.posterUrl || realPoster?.url || (!imgError && !isPosterLoading ? `https://image.pollinations.ai/prompt/Movie%20poster%20for%20${encodeURIComponent(item.title)}%20cinematic%20dark?width=300&height=450&nologo=true&seed=${item.id}` : null);
 
   return (
     <div 

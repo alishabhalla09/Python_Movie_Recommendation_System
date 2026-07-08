@@ -14,7 +14,7 @@ export default function PosterCard({ item, onClick }: PosterCardProps) {
   const [imgError, setImgError] = useState(false);
 
   // Only call IMDB API if DB doesn't have a poster
-  const { data: realPoster } = useQuery({
+  const { data: realPoster, isLoading: isPosterLoading } = useQuery({
     queryKey: ['/api/images/poster', item.title],
     queryFn: () => customFetch<{url: string | null}>(`/api/images/poster?title=${encodeURIComponent(item.title)}`),
     enabled: !item.posterUrl && !imgError,
@@ -25,7 +25,7 @@ export default function PosterCard({ item, onClick }: PosterCardProps) {
   // Priority: DB posterUrl > IMDB API result > AI-generated fallback
   const displayImage = item.posterUrl
     || realPoster?.url
-    || (!imgError
+    || (!imgError && !isPosterLoading
       ? `https://image.pollinations.ai/prompt/Movie%20poster%20for%20${encodeURIComponent(item.title)}%20cinematic%20dark?width=300&height=450&nologo=true&seed=${item.id}`
       : null);
 
