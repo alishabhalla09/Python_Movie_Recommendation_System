@@ -3,8 +3,44 @@ import { useLocation } from "wouter";
 import { useGetTrending, customFetch } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
+
+function SelectablePosterCard({ item, isSelected, onToggle }: { item: any, isSelected: boolean, onToggle: () => void }) {
+  const [imgError, setImgError] = useState(false);
+  const { data: realPoster } = useQuery({
+    queryKey: ['/api/images/poster', item.title],
+    queryFn: () => customFetch<{url: string | null}>(`/api/images/poster?title=${encodeURIComponent(item.title)}`),
+    enabled: !item.posterUrl && !imgError,
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+
+  const displayImage = item.posterUrl || realPoster?.url || (!imgError ? `https://image.pollinations.ai/prompt/Movie%20poster%20for%20${encodeURIComponent(item.title)}%20cinematic%20dark?width=300&height=450&nologo=true&seed=${item.id}` : null);
+
+  return (
+    <div 
+      className={`relative aspect-[2/3] cursor-pointer rounded-lg overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-primary scale-95 opacity-80' : 'hover:scale-105 opacity-100 hover:ring-2 ring-zinc-500'}`}
+      onClick={onToggle}
+    >
+      {displayImage && !imgError ? (
+        <img src={displayImage} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-black flex flex-col items-center justify-center p-4 text-center">
+          <span className="font-bold text-sm text-white opacity-90">{item.title}</span>
+          {item.releaseYear && <span className="text-xs text-primary mt-2">{item.releaseYear}</span>}
+        </div>
+      )}
+      
+      {isSelected && (
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-primary text-white rounded-full p-2 animate-in zoom-in">
+            <Check className="w-8 h-8" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
@@ -61,27 +97,12 @@ export default function Onboarding() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {items?.map(item => (
-          <div 
+          <SelectablePosterCard 
             key={item.id} 
-            className={`relative aspect-[2/3] cursor-pointer rounded-lg overflow-hidden transition-all duration-300 ${selectedIds.has(item.id) ? 'ring-4 ring-primary scale-95 opacity-80' : 'hover:scale-105 opacity-100 hover:ring-2 ring-zinc-500'}`}
-            onClick={() => toggleSelection(item.id)}
-          >
-            {item.posterUrl ? (
-              <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-black flex items-center justify-center p-4 text-center">
-                <span className="font-bold text-sm">{item.title}</span>
-              </div>
-            )}
-            
-            {selectedIds.has(item.id) && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <div className="bg-primary text-white rounded-full p-2 animate-in zoom-in">
-                  <Check className="w-8 h-8" />
-                </div>
-              </div>
-            )}
-          </div>
+            item={item} 
+            isSelected={selectedIds.has(item.id)} 
+            onToggle={() => toggleSelection(item.id)} 
+          />
         ))}
       </div>
 

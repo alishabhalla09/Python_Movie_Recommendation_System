@@ -79,6 +79,13 @@ export default function ItemDetail() {
   const { data: watchlistStatus, refetch: refetchWatchlist } = useCheckWatchlist(itemId);
   const { data: reviews = [], refetch: refetchReviews } = useGetReviews(itemId);
   
+  const { data: realPoster } = useQuery({
+    queryKey: ['/api/images/poster', item?.title],
+    queryFn: () => customFetch<{url: string | null}>(`/api/images/poster?title=${encodeURIComponent(item!.title)}`),
+    enabled: !!item && !item.backdropUrl && !item.posterUrl && !imgError,
+    staleTime: 1000 * 60 * 60 * 24, // cache 24h
+  });
+
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
   const logInteraction = useLogInteraction();
@@ -143,6 +150,10 @@ export default function ItemDetail() {
       <div className="relative w-full h-[60vh] md:h-[80vh]">
         {item.backdropUrl && !imgError ? (
           <img src={item.backdropUrl} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-50" />
+        ) : item.posterUrl && !imgError ? (
+          <img src={item.posterUrl} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-40 md:blur-sm" />
+        ) : realPoster?.url && !imgError ? (
+          <img src={realPoster.url} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-40 md:blur-sm" />
         ) : !imgError ? (
           <img src={`https://image.pollinations.ai/prompt/Cinematic%20wide%20epic%20background%20landscape%20for%20the%20movie%20${encodeURIComponent(item.title)}?width=1920&height=1080&nologo=true`} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-40" />
         ) : (
