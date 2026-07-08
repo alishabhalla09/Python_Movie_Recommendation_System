@@ -74,6 +74,10 @@ export default function ItemDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [reviewText, setReviewText] = useState("");
+  const [rating, setRating] = useState(10);
+  const [imageErrorLevel, setImageErrorLevel] = useState(0);
+
   const { data: item, isLoading } = useGetItem(itemId, { query: { enabled: !!itemId, queryKey: getGetItemQueryKey(itemId) } });
   const { data: similar = [] } = useSimilarItems(itemId);
   const { data: watchlistStatus, refetch: refetchWatchlist } = useCheckWatchlist(itemId);
@@ -91,9 +95,6 @@ export default function ItemDetail() {
   const logInteraction = useLogInteraction();
   const createReview = useCreateReview();
 
-  const [reviewText, setReviewText] = useState("");
-  const [rating, setRating] = useState(10);
-  const [imageErrorLevel, setImageErrorLevel] = useState(0);
 
   // Log view interaction
   useEffect(() => {
