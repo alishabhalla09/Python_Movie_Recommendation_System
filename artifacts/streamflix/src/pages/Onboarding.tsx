@@ -8,35 +8,18 @@ import { Check } from "lucide-react";
 
 function SelectablePosterCard({ item, isSelected, onToggle }: { item: any, isSelected: boolean, onToggle: () => void }) {
   const [imgError, setImgError] = useState(false);
-  const [inView, setInView] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "150px" }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const { data: realPoster, isLoading: isPosterLoading } = useQuery({
+  const { data: realPoster, isFetching } = useQuery({
     queryKey: ['/api/images/poster', item.title],
     queryFn: () => customFetch<{url: string | null}>(`/api/images/poster?title=${encodeURIComponent(item.title)}`),
-    enabled: inView && !item.posterUrl && !imgError,
+    enabled: !item.posterUrl && !imgError,
     staleTime: 1000 * 60 * 60 * 24,
   });
 
-  const displayImage = item.posterUrl || realPoster?.url || (!imgError && !isPosterLoading ? `https://image.pollinations.ai/prompt/Movie%20poster%20for%20${encodeURIComponent(item.title)}%20cinematic%20dark?width=300&height=450&nologo=true&seed=${item.id}` : null);
+  const displayImage = item.posterUrl || realPoster?.url || (!imgError && !isFetching && realPoster !== undefined ? `https://image.pollinations.ai/prompt/Movie%20poster%20for%20${encodeURIComponent(item.title)}%20cinematic%20dark?width=300&height=450&nologo=true&seed=${item.id}` : null);
 
   return (
     <div 
-      ref={ref}
       className={`relative aspect-[2/3] cursor-pointer rounded-lg overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-primary scale-95 opacity-80' : 'hover:scale-105 opacity-100 hover:ring-2 ring-zinc-500'}`}
       onClick={onToggle}
     >

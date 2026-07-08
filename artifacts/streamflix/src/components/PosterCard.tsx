@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import type { Item } from "@workspace/api-client-react";
 import { Star } from "lucide-react";
@@ -12,28 +12,12 @@ interface PosterCardProps {
 
 export default function PosterCard({ item, onClick }: PosterCardProps) {
   const [imgError, setImgError] = useState(false);
-  const [inView, setInView] = useState(false);
-  const ref = useRef<HTMLAnchorElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "150px" }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
 
   // Only call IMDB API if DB doesn't have a poster
-  const { data: realPoster, isLoading: isPosterLoading } = useQuery({
+  const { data: realPoster, isFetching } = useQuery({
     queryKey: ['/api/images/poster', item.title],
     queryFn: () => customFetch<{url: string | null}>(`/api/images/poster?title=${encodeURIComponent(item.title)}`),
-    enabled: inView && !item.posterUrl && !imgError,
+    enabled: !item.posterUrl && !imgError,
     staleTime: 1000 * 60 * 60 * 24, // cache 24h
     gcTime: 1000 * 60 * 60 * 24,
   });
@@ -41,13 +25,12 @@ export default function PosterCard({ item, onClick }: PosterCardProps) {
   // Priority: DB posterUrl > IMDB API result > AI-generated fallback
   const displayImage = item.posterUrl
     || realPoster?.url
-    || (!imgError && !isPosterLoading
+    || (!imgError && !isFetching && realPoster !== undefined
       ? `https://image.pollinations.ai/prompt/Movie%20poster%20for%20${encodeURIComponent(item.title)}%20cinematic%20dark?width=300&height=450&nologo=true&seed=${item.id}`
       : null);
 
   return (
     <Link
-      ref={ref}
       href={`/item/${item.id}`}
       className="group relative block aspect-[2/3] rounded-md overflow-hidden bg-zinc-900 border border-zinc-800 hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:z-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background shrink-0"
       onClick={onClick}
