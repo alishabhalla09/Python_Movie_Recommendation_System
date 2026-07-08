@@ -23,7 +23,7 @@ function SelectablePosterCard({ item, isSelected, onToggle }: { item: any, isSel
       onClick={onToggle}
     >
       {displayImage && !imgError ? (
-        <img src={displayImage} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover" />
+        <img src={displayImage} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-black flex flex-col items-center justify-center p-4 text-center">
           <span className="font-bold text-sm text-white opacity-90">{item.title}</span>

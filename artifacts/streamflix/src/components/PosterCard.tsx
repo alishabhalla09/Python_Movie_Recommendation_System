@@ -42,6 +42,7 @@ export default function PosterCard({ item, onClick }: PosterCardProps) {
           onError={() => setImgError(true)}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
+          decoding="async"
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-black flex flex-col items-center justify-center p-4 text-center">

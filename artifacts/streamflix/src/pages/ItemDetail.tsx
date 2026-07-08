@@ -82,7 +82,7 @@ export default function ItemDetail() {
   const { data: realPoster } = useQuery({
     queryKey: ['/api/images/poster', item?.title],
     queryFn: () => customFetch<{url: string | null}>(`/api/images/poster?title=${encodeURIComponent(item!.title)}`),
-    enabled: !!item && !item.backdropUrl && !item.posterUrl && !imgError,
+    enabled: !!item && !item.backdropUrl && !item.posterUrl && imageErrorLevel < 3,
     staleTime: 1000 * 60 * 60 * 24, // cache 24h
   });
 
@@ -93,7 +93,7 @@ export default function ItemDetail() {
 
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(10);
-  const [imgError, setImgError] = useState(false);
+  const [imageErrorLevel, setImageErrorLevel] = useState(0);
 
   // Log view interaction
   useEffect(() => {
@@ -148,14 +148,14 @@ export default function ItemDetail() {
     <div className="bg-black min-h-screen pb-20">
       {/* Hero Backdrop */}
       <div className="relative w-full h-[60vh] md:h-[80vh]">
-        {item.backdropUrl && !imgError ? (
-          <img src={item.backdropUrl} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-50" />
-        ) : item.posterUrl && !imgError ? (
-          <img src={item.posterUrl} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-40 md:blur-sm" />
-        ) : realPoster?.url && !imgError ? (
-          <img src={realPoster.url} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-40 md:blur-sm" />
-        ) : !imgError ? (
-          <img src={`https://image.pollinations.ai/prompt/Cinematic%20wide%20epic%20background%20landscape%20for%20the%20movie%20${encodeURIComponent(item.title)}?width=1920&height=1080&nologo=true`} alt={item.title} onError={() => setImgError(true)} className="w-full h-full object-cover opacity-40" />
+        {item.backdropUrl && imageErrorLevel < 1 ? (
+          <img src={item.backdropUrl} alt={item.title} onError={() => setImageErrorLevel(1)} className="w-full h-full object-cover opacity-50" />
+        ) : item.posterUrl && imageErrorLevel < 2 ? (
+          <img src={item.posterUrl} alt={item.title} onError={() => setImageErrorLevel(2)} className="w-full h-full object-cover opacity-40 md:blur-sm" />
+        ) : realPoster?.url && imageErrorLevel < 3 ? (
+          <img src={realPoster.url} alt={item.title} onError={() => setImageErrorLevel(3)} className="w-full h-full object-cover opacity-40 md:blur-sm" />
+        ) : imageErrorLevel < 4 ? (
+          <img src={`https://image.pollinations.ai/prompt/Cinematic%20wide%20epic%20background%20landscape%20for%20the%20movie%20${encodeURIComponent(item.title)}?width=1920&height=1080&nologo=true`} alt={item.title} onError={() => setImageErrorLevel(4)} className="w-full h-full object-cover opacity-40" />
         ) : (
           <div className="w-full h-full bg-gradient-to-tr from-zinc-900 to-black"></div>
         )}
